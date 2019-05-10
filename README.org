@@ -1,0 +1,14 @@
+* org-sort-tasks
+** Description
+An interactive fn that sorts a list of tasks in the selected region or under the headline on cursor.
+
+There are two main ways of use:
+
+1) You can let the cursor above any position of a headline and press M-x org-sort-tasks.
+2) You can select a region and use M-x org-sort-tasks.
+
+The user will be prompted to reply a simple question like \"Is 'xxx task' SHOULD BE DONE BEFORE 'yyy task'?\". After reply some questions, the fn will open a new buffer and build a sorted list of tasks. It is very useful for who uses GTD method and work with huge unsorted lists of tasks.
+
+This function uses the [[https://en.wikipedia.org/wiki/Merge_sort][Merge sort]] technique.
+
+[[./org-sort-tasks.gif]]
