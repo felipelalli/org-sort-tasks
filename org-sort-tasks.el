@@ -166,3 +166,5 @@ The user will be prompted to reply a simple question like \"Is 'xxx task' SHOULD
 			 (org-element-property :level task))
 		  (sort-tasks/sort-children final-buffer task))))
 	    (switch-to-buffer final-buffer)))))))
+
+(provide 'org-sort-tasks)
