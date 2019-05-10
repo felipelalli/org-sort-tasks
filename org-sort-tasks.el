@@ -97,7 +97,7 @@ Note: sort-tasks/sort-list is private and is used by sort-tasks/sort-children"
 						      (nth pivot task-list)
 						      (sort-tasks/sort-list right-list)))
 					       (t (progn
-						    (if (y-or-n-p (format "IS '%s' *SHOULD BE DONE BEFORE* '%s'?"
+						    (if (y-or-n-p (format "'%s' *SHOULD BE DONE BEFORE* '%s'?"
 									  (aref (nth c task-list) 0)
 									  (aref (nth pivot task-list) 0)))
 							(setq left-list (cons (nth c task-list) left-list))
