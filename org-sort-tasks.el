@@ -227,7 +227,7 @@ There are two main ways of use:
 1) You can let the cursor above any position of a headline and press M-x org-sort-tasks.
 2) You can select a region and use M-x org-sort-tasks.
 
-The user will be prompted to reply a simple question like \"Is 'xxx task' SHOULD BE DONE BEFORE 'yyy task'?\". After reply some questions, the fn will open a new buffer and build a sorted list of tasks. It is very useful for who uses GTD method and work with huge unsorted lists of tasks.
+The user will be prompted to reply a simple question like \"Should 'xxx task' BE DONE BEFORE 'yyy task'?\". After reply some questions, the fn will open a new buffer and build a sorted list of tasks. It is very useful for who uses GTD method and work with huge unsorted lists of tasks.
 
 See also:
 
