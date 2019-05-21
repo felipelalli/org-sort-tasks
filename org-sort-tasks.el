@@ -1,7 +1,7 @@
 ;;; org-sort-tasks.el --- An easy way to sort your long TODO list.  -*- lexical-binding: t -*-
 
-;; Version: 1.0
-;; Keywords: orgmode, sort, task, todo, ordered list, merge sort
+;; Version: 1.1
+;; Keywords: orgmode, sort, task, todo, ordered list
 
 ;; MIT License
 

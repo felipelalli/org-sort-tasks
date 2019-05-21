@@ -9,6 +9,4 @@ There are two main ways of use:
 
 The user will be prompted to reply a simple question like \"Is 'xxx task' SHOULD BE DONE BEFORE 'yyy task'?\". After reply some questions, the fn will open a new buffer and build a sorted list of tasks. It is very useful for who uses GTD method and work with huge unsorted lists of tasks.
 
-This function uses the [[https://en.wikipedia.org/wiki/Merge_sort][Merge sort]] technique.
-
 [[./org-sort-tasks.gif]]
