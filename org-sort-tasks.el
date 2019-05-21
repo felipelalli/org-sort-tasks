@@ -119,8 +119,8 @@ See also: `-flatten-n'"
                                       (car (org-element-property :title task2))
                                       (car (org-element-property :title task1))))))))))
 
-(defun sort-tasks/sort-list (task-list tolerance)
-  "This fn receives a list of tasks. Each task is a vector composed by the task element itself and its raw content. It uses the merge sort technique to sort the list asking to the user which task should be done before another task.
+(defun sort-tasks/sort-list (task-list tolerance roughly)
+  "This fn receives a list of tasks. Each task is a vector composed by the task element itself and its raw content.
 
 Note: sort-tasks/sort-list is private and is used by sort-tasks/sort-children"
   (let ((sorted-list
@@ -139,9 +139,13 @@ Note: sort-tasks/sort-list is private and is used by sort-tasks/sort-children"
                                          (cond ((= c pivot)
                                                 (go-next (+ c 1)))
                                                ((>= c (length task-list))
-                                                (list (sort-tasks/sort-list left-list tolerance)
+                                                (list (sort-tasks/sort-list left-list tolerance roughly)
                                                       (nth pivot task-list)
-                                                      (sort-tasks/sort-list right-list tolerance)))
+                                                      (if (or (not roughly)
+							      (<= (length right-list) 3))
+                                                          (sort-tasks/sort-list right-list tolerance roughly)
+                                                          right-list)
+                                                      ))
                                                (t (progn
                                                     (if (sort-tasks/sort
                                                          (aref (nth c task-list) 0)
@@ -153,7 +157,7 @@ Note: sort-tasks/sort-list is private and is used by sort-tasks/sort-children"
                       (go-next 0)))))))
     (sort-tasks/flatten sorted-list)))
 
-(defun sort-tasks/sort-children (final-buffer element tolerance)
+(defun sort-tasks/sort-children (final-buffer element tolerance roughly)
   "This fn receives a root element and sort all its children.
 
 Note: sort-tasks/sort-children is private and it is used by the main org-sort-tasks fn."
@@ -167,17 +171,15 @@ Note: sort-tasks/sort-children is private and it is used by the main org-sort-ta
                                             (org-element-property :end task)))
                 nil))))
          (aprox-steps (ceiling (* (length list-of-tasks) (log (max 1 (length list-of-tasks)) 5)))))
-    (and (or (<= aprox-steps 20)
-             (y-or-n-p (format "It will take aprox. %s steps to sort this list. Are you READY?" aprox-steps)))
-         (let ((sorted-list (sort-tasks/sort-list list-of-tasks tolerance)))
-           (with-current-buffer final-buffer
-             (insert (format "* %s\n" (car (org-element-property :title element))))
-             (mapcar (lambda (c)
-                       (insert (format "%s" (aref c 1))))
-                     sorted-list)
-             t)))))
+    (let ((sorted-list (sort-tasks/sort-list list-of-tasks tolerance roughly)))
+      (with-current-buffer final-buffer
+        (insert (format "* %s\n" (car (org-element-property :title element))))
+        (mapcar (lambda (c)
+                  (insert (format "%s" (aref c 1))))
+                sorted-list)
+        t))))
 
-(defun org-sort-tasks/main (tolerance)
+(defun org-sort-tasks/main (tolerance roughly)
   (cl-assert (>= tolerance 1) t "tolerance should be >= 1: %d")
   (let ((final-buffer (generate-new-buffer "*sorted-tasks*"))
         (no-selection (not (use-region-p)))
@@ -198,7 +200,7 @@ Note: sort-tasks/sort-children is private and it is used by the main org-sort-ta
                    (lambda (task)
                      (when (= (org-element-property :level first-element)
                               (org-element-property :level task))
-                       (sort-tasks/sort-children final-buffer task tolerance))))))
+                       (sort-tasks/sort-children final-buffer task tolerance roughly))))))
             (if (= (length result-list) 0)
                 (message "Aborted.")
                 (progn
@@ -207,17 +209,6 @@ Note: sort-tasks/sort-children is private and it is used by the main org-sort-ta
                   (org-mode)
                   (org-cycle)
                   (message "Done! A sorted list was built and opened in a new disposable buffer.")))))))))
-
-(defun org-sort-tasks-with-tolerance (tolerance)
-  "Same as 'org-sort-tasks' but you can pass a tolerance as parameter. 1 mean no tolerance and as you increase the value, more tolerance."
-  (interactive "nTolerance (1 to n):")
-  (org-sort-tasks/main tolerance))
-
-(defun org-sort-tasks-with-some-tolerance ()
-  "An interactive fn that sorts a list of tasks in the selected region or under the headline on cursor with some tolerance (= 2).
-   See the long description in fn 'org-sort-tasks'."
-  (interactive)
-  (org-sort-tasks/main 2))
 
 (defun org-sort-tasks ()
   "An interactive fn that sorts a list of tasks in the selected region or under the headline on cursor.
@@ -231,15 +222,18 @@ The user will be prompted to reply a simple question like \"Should 'xxx task' BE
 
 See also:
 
-- org-sort-tasks-with-tolerance
-- org-sort-tasks-with-some-tolerance
+- org-sort-tasks-roughly
 "
   (interactive)
-  (org-sort-tasks/main 1))
+  (org-sort-tasks/main 1 nil))
+
+(defun org-sort-tasks-roughly ()
+  "The same of `org-sort-tasks` but it tends to make the top of the list sorted and the rest messy. In the sort algorithm, it always leaves the second half unsorted."
+  (interactive)
+  (org-sort-tasks/main 1 t))
 
 ;; Export
 
 (provide 'org-sort-tasks)
-(provide 'org-sort-tasks-with-tolerance)
-(provide 'org-sort-tasks-with-some-tolerance)
+(provide 'org-sort-tasks-roughly)
 ; org-fix-task-position
