@@ -49,27 +49,25 @@
            (< (org-element-property :day-start ts1)
               (org-element-property :day-start ts2)))))
 
-(defun sort-tasks/sort (task1-obj task2-obj)
-  (let ((task1 (aref task1-obj 0))
-	(task2 (aref task2-obj 0)))
-    "Decides if task1 should be done before task2 or not. First, look to deadline, scheduled, priority and then ask to the user."
-    (let ((t1 (or (org-element-property :deadline task1) (org-element-property :scheduled task1)))
-          (t2 (or (org-element-property :deadline task2) (org-element-property :scheduled task2)))
-          (p1 (or (org-element-property :priority task1) org-default-priority))
-          (p2 (or (org-element-property :priority task2) org-default-priority)))
-      (cond ((eq (org-element-property :todo-type task1) 'done) nil)
-            ((eq (org-element-property :todo-type task2) 'done) t)
-            ((and t1 (not t2)) t)
-            ((and t2 (not t1)) nil)
-            ((and t1 t2
-                  (not (sort-tasks/timestamp-obj=? t1 t2)))
-             (if (sort-tasks/timestamp-obj<? t1 t2) t nil))
-            ((< p1 p2) t)
-            ((> p1 p2) nil)
-            (t (not (with-local-quit
-		      (y-or-n-p (format "Should:\n...'%s'\nbe done *BEFORE*\n...'%s'?"
-					(car (org-element-property :title task2))
-					(car (org-element-property :title task1)))))))))))
+(defun sort-tasks/sort (task1 task2)
+  "Decides if task1 should be done before task2 or not. First, look to deadline, scheduled, priority and then ask to the user."
+  (let ((t1 (or (org-element-property :deadline task1) (org-element-property :scheduled task1)))
+        (t2 (or (org-element-property :deadline task2) (org-element-property :scheduled task2)))
+        (p1 (or (org-element-property :priority task1) org-default-priority))
+        (p2 (or (org-element-property :priority task2) org-default-priority)))
+    (cond ((eq (org-element-property :todo-type task1) 'done) nil)
+          ((eq (org-element-property :todo-type task2) 'done) t)
+          ((and t1 (not t2)) t)
+          ((and t2 (not t1)) nil)
+          ((and t1 t2
+                (not (sort-tasks/timestamp-obj=? t1 t2)))
+           (if (sort-tasks/timestamp-obj<? t1 t2) t nil))
+          ((< p1 p2) t)
+          ((> p1 p2) nil)
+          (t (not (with-local-quit
+		    (y-or-n-p (format "Should:\n...'%s'\nbe done *BEFORE*\n...'%s'?"
+				      (car (org-element-property :title task2))
+				      (car (org-element-property :title task1))))))))))
 
 (defun sort-tasks/sort-list (task-list)
   (sort task-list 'sort-tasks/sort))
@@ -83,18 +81,18 @@ Note: sort-tasks/sort-children is private and it is used by the main org-sort-ta
             (lambda (task)
               (if (and (= (+ (org-element-property :level element) 1)
                           (org-element-property :level task)))
-                  (vector task
-                          (buffer-substring (org-element-property :begin task)
-                                            (org-element-property :end task)))
+                  task
                 nil))))
          (aprox-steps (ceiling (* (length list-of-tasks) (log (max 1 (length list-of-tasks)) 5)))))
     (let ((sorted-list (sort-tasks/sort-list list-of-tasks)))
-      (with-current-buffer final-buffer
-        (insert (format "* %s\n" (car (org-element-property :title element))))
-        (mapcar (lambda (c)
-                  (insert (format "%s" (aref c 1))))
-                sorted-list)
-        t))))
+      (with-current-buffer final-buffer (insert (format "* %s\n" (car (org-element-property :title element)))))
+      (mapcar (lambda (c)
+		(let ((task-content (buffer-substring (org-element-property :begin c)
+						      (org-element-property :end c))))
+                  (with-current-buffer final-buffer
+		    (insert (format "%s" task-content)))))
+              sorted-list)
+      t)))
 
 (defun org-sort-tasks/main ()
   (let ((final-buffer (generate-new-buffer "*sorted-tasks*"))
