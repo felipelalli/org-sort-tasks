@@ -198,7 +198,9 @@ The user will be prompted to reply a simple question like \"Should 'xxx task' BE
         (recenter-top-bottom))))
 
 (defun org-insert-sorted-todo-heading ()
-  "An interactive fn that inserts a TODO heading in the right position. Let the cursor above the root (parent) element."
+  "An interactive fn that inserts a TODO heading in the right position in a pre-sorted list. Let the cursor above the root (parent) element.
+
+*WARNING:* If the list is unsorted, use `org-sort-tasks` first."
   (interactive)
   (org-insert-sorted-todo-heading/main))
 

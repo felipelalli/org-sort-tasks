@@ -1,4 +1,8 @@
 * Organize your TODO list
+** org-insert-sorted-todo-heading
+An interactive fn that inserts a TODO heading in the right position in a pre-sorted list. Let the cursor above the root (parent) element.
+
+*WARNING:* If the list is unsorted, use `org-sort-tasks` first.
 ** org-sort-tasks
 An interactive fn that sorts a list of tasks in the selected region or under the headline on cursor.
 
@@ -10,5 +14,4 @@ There are two main ways of use:
 The user will be prompted to reply a simple question like \"Should 'xxx task' BE DONE BEFORE 'yyy task'?\". After reply some questions, the fn will open a new buffer and build a sorted list of tasks. It is very useful for who uses GTD method and work with huge unsorted lists of tasks. The number of questions will be in avg O(n log n).
 
 [[./org-sort-tasks.gif]]
-** org-insert-sorted-todo-heading
-An interactive fn that inserts a TODO heading in the right position. Let the cursor above the root (parent) element.
+
