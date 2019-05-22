@@ -1,12 +1,14 @@
-* org-sort-tasks
-** Description
+* Organize your TODO list
+** org-sort-tasks
 An interactive fn that sorts a list of tasks in the selected region or under the headline on cursor.
 
 There are two main ways of use:
 
-1) You can let the cursor above any position of a headline and press M-x org-sort-tasks.
-2) You can select a region and use M-x org-sort-tasks.
+1) Let the cursor at any position of a root headline and press M-x org-sort-tasks.
+2) Mark a region and use M-x org-sort-tasks.
 
-The user will be prompted to reply a simple question like \"SHOULD 'xxx task' BE DONE BEFORE 'yyy task'?\". After reply some questions, the fn will open a new buffer and build a sorted list of tasks. It is very useful for who uses GTD method and work with huge unsorted lists of tasks.
+The user will be prompted to reply a simple question like \"Should 'xxx task' BE DONE BEFORE 'yyy task'?\". After reply some questions, the fn will open a new buffer and build a sorted list of tasks. It is very useful for who uses GTD method and work with huge unsorted lists of tasks. The number of questions will be in avg O(n log n).
 
 [[./org-sort-tasks.gif]]
+** org-insert-sorted-todo-heading
+An interactive fn that inserts a TODO heading in the right position. Let the cursor above the root (parent) element.
