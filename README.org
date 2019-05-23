@@ -1,4 +1,8 @@
 * Organize your TODO list
+You can sort an unsorted TODO list using mergesort with `org-sort-tasks`. The fn will try to find which task is more important taking into account deadline, scheduled time, priority and then, if everything is equal, finally ask to the user.
+
+When the list is already sorted, you can use fn `org-insert-sorted-todo-heading` to insert a task in a right position using binary search.
+
 ** org-insert-sorted-todo-heading
 An interactive fn that inserts a TODO heading in the right position in a pre-sorted list. Let the cursor above the root (parent) element.
 
