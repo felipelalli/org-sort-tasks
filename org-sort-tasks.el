@@ -1,6 +1,6 @@
 ;;; org-sort-tasks.el --- An easy way to sort your long TODO list.  -*- lexical-binding: t -*-
 
-;; Version: 2.0
+;; Version: 2.1
 ;; Keywords: orgmode, sort, task, todo, ordered list
 
 ;; MIT License
@@ -157,36 +157,43 @@ The user will be prompted to reply a simple question like \"Should 'xxx task' BE
       (org-insert-todo-heading-respect-content))
   (message "Done!"))
 
-(defun org-insert-sorted-todo-heading/insert-in-right-position-using-binary-search (task-list)
+(defun org-insert-sorted-todo-heading/insert-in-right-position-using-binary-search
+    (task-short-description task-list)
   (when (< (length task-list) 1)
     (error "The list is empty."))
-  (cond ((= (length task-list) 1)
-         (org-insert-sorted-todo-heading/insert
-          (org-element-property :begin (car task-list))
-          (sort-tasks/sort/interactive
-              (car (org-element-property :title (car task-list)))
-              "THE NEW TASK")))
-        (t (let* ((pivot (/ (length task-list) 2))
-                  (left-list (butlast task-list (- (length task-list) pivot)))
-                  (right-list (nthcdr (+ pivot 1) task-list)))
-             (if (sort-tasks/sort/interactive
-                  (car (org-element-property :title (nth pivot task-list)))
-                  "THE NEW TASK")
-                 (org-insert-sorted-todo-heading/insert-in-right-position-using-binary-search
-                  left-list)
-               (if (null right-list)
-                   (org-insert-sorted-todo-heading/insert (org-element-property :begin (nth pivot task-list)) nil)
+  (let ((task-short-description (if (and task-short-description
+                                         (not (string= "" task-short-description)))
+                                    task-short-description
+                                    "THE NEW TASK")))
+    (cond ((= (length task-list) 1)
+           (org-insert-sorted-todo-heading/insert
+            (org-element-property :begin (car task-list))
+            (sort-tasks/sort/interactive
+             (car (org-element-property :title (car task-list)))
+             task-short-description)))
+          (t (let* ((pivot (/ (length task-list) 2))
+                    (left-list (butlast task-list (- (length task-list) pivot)))
+                    (right-list (nthcdr (+ pivot 1) task-list)))
+               (if (sort-tasks/sort/interactive
+                    (car (org-element-property :title (nth pivot task-list)))
+                    task-short-description)
                    (org-insert-sorted-todo-heading/insert-in-right-position-using-binary-search
-                    right-list)))))))
+                    task-short-description
+                    left-list)
+                   (if (null right-list)
+                       (org-insert-sorted-todo-heading/insert (org-element-property :begin (nth pivot task-list)) nil)
+                       (org-insert-sorted-todo-heading/insert-in-right-position-using-binary-search
+                          task-short-description
+                          right-list))))))))
 
-(defun org-insert-sorted-todo-heading/main ()
+(defun org-insert-sorted-todo-heading/main (task-short-description)
   (if (use-region-p)
       (error "Do not mark. Just let the cursor at some root heading.")
       (progn
         (beginning-of-line)
         (org-mark-subtree)
         (next-line)
-        (deactivate-mark)        
+        (deactivate-mark)
         (save-restriction
           (narrow-to-region (region-beginning) (region-end))
           (beginning-of-buffer)
@@ -194,15 +201,18 @@ The user will be prompted to reply a simple question like \"Should 'xxx task' BE
             (if (not (eq (org-element-type first-element) 'headline))
                 (error "The first element must be a headline.")
                 (org-insert-sorted-todo-heading/insert-in-right-position-using-binary-search
+                  task-short-description
                   (org-element-contents (org-element-parse-buffer))))))
-        (recenter-top-bottom))))
+        (recenter-top-bottom)
+        (when task-short-description
+          (insert task-short-description)))))
 
-(defun org-insert-sorted-todo-heading ()
+(defun org-insert-sorted-todo-heading (task-short-description)
   "An interactive fn that inserts a TODO heading in the right position in a pre-sorted list. Let the cursor above the root (parent) element.
 
 *WARNING:* If the list is unsorted, use `org-sort-tasks` first."
-  (interactive)
-  (org-insert-sorted-todo-heading/main))
+  (interactive "sType the task short description: ")
+  (org-insert-sorted-todo-heading/main task-short-description))
 
 ;; Export
 
