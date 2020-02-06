@@ -25,6 +25,166 @@
 ;; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ;; SOFTWARE.
 
+;; -*- lexical-binding:t -*-
+
+;;
+;; CUSTOMIZATION
+;;
+
+(defcustom org-sort-tasks-algo 'org-sort-tasks/adapted-merge-sort
+       "The sorting fn. Prefer functions that reduce the number of COMPARISONS and is good for short and pre-sorted lists."
+       :type '(symbol)
+       :group 'convenience)
+
+;;
+;; COMMON CODE
+;;
+
+(setq max-lisp-eval-depth 50000)
+(setq max-specpdl-size 50000)
+
+(defun org-sort-tasks/create-counter ()
+  (let ((c 0))
+    (lambda ()
+      (setq c (+ c 1))
+      c)))
+
+(defun org-sort-tasks/nshuffle (sequence)
+  (loop for i from (length sequence) downto 2
+        do (rotatef (elt sequence (random i))
+                    (elt sequence (1- i))))
+  sequence)
+
+(defun org-sort-tasks/slightly-nshuffle (factor sequence)
+  (loop for i to (min 2 (/ (length sequence) factor))
+        do (rotatef (elt sequence (random (length sequence)))
+                    (elt sequence (random (length sequence)))))
+  sequence)
+
+(defun org-sort-tasks/sort-counting (sort-algo lst)
+  (let* ((counter (org-sort-tasks/create-counter))
+         (result (apply sort-algo (list lst (lambda (a b)
+                                              (funcall counter)
+                                              (< a b))))))
+    (/ (* (funcall counter) 1.0)
+       (length result))))
+
+(defun org-sort-tasks/sort-counting-avg (sort-algo lst-generator)
+  (/ (seq-reduce #'+
+                 (mapcar (lambda (c)
+                           (org-sort-tasks/sort-counting
+                            sort-algo
+                            (funcall lst-generator)))
+                         (cl-loop for x from 1 to 512 collect x)) 0)
+     512.0))
+
+(defun org-sort-tasks/merge (lst1 lst2 comparison-fn)
+  "If lst1 < lst2 then merge immediately."
+  (if (or (null lst1)
+          (null lst2))
+      (append lst1 lst2)
+      (if (not (funcall comparison-fn
+                        (car lst2)
+                        (car (last lst1))))
+          (append lst1 lst2)
+          (let ((i 0)
+                (j 0)
+                (result '()))
+            (cl-labels ((go-next ()
+                                 (cond ((>= i (length lst1))
+                                        (setq result (append result (seq-drop lst2 j))))
+                                       ((>= j (length lst2))
+                                        (setq result (append result (seq-drop lst1 i))))
+                                       (t (progn
+                                            (if (funcall comparison-fn
+                                                         (nth i lst1)
+                                                         (nth j lst2))
+                                                (progn
+                                                  (setq result (append result (list (nth i lst1))))
+                                                  (setq i (+ i 1)))
+                                                (progn
+                                                  (setq result (append result (list (nth j lst2))))
+                                                  (setq j (+ j 1))))
+                                            (go-next))))))
+              (go-next)
+              result)))))
+
+(defun org-sort-tasks/insert-in-the-middle (lst pos element)
+  (append (seq-take lst pos) (list element) (seq-drop lst pos)))
+
+(defun org-sort-tasks/insert-sort (lst comparison-fn)
+  (let ((result '()))
+    (cl-labels ((go-next (i)
+                         (cond ((>= i (length lst))
+                                result)
+                               ((null result)
+                                (setq result (list (nth i lst)))
+                                (go-next (+ i 1)))
+                               (t (cl-labels ((go-backward (j)
+                                                           (cond ((< j 0)
+                                                                  (setq result (append (list (nth i lst))
+                                                                                       result)))
+                                                                 ((funcall comparison-fn
+                                                                           (nth i lst)
+                                                                           (nth j result))
+                                                                  (go-backward (- j 1)))
+                                                                 (t (setq result
+                                                                          (org-sort-tasks/insert-in-the-middle
+                                                                           result (+ j 1) (nth i lst)))))))
+                                    (go-backward (- (length result) 1))
+                                    (go-next (+ i 1)))))))
+      (go-next 0))))
+
+(defun org-sort-tasks/adapted-merge-sort (lst comparison-fn)
+  (if (<= (length lst) 8)
+      (org-sort-tasks/insert-sort lst comparison-fn)
+      (org-sort-tasks/merge (org-sort-tasks/adapted-merge-sort (seq-take lst (/ (length lst) 2)) comparison-fn)
+                            (org-sort-tasks/adapted-merge-sort (seq-drop lst (/ (length lst) 2)) comparison-fn)
+                            comparison-fn)))
+
+(defun org-sort-tasks/test-sort-algo (sort-algo)
+  (let ((a (org-sort-tasks/sort-counting sort-algo (cl-loop for x from 1 to 16 collect x)))
+        (b (org-sort-tasks/sort-counting sort-algo (cl-loop for x from 1 to 64 collect x)))
+        (c (org-sort-tasks/sort-counting sort-algo (cl-loop for x from 16 downto 1 collect x)))
+        (d (org-sort-tasks/sort-counting sort-algo (cl-loop for x from 64 downto 1 collect x)))
+        (e (org-sort-tasks/sort-counting-avg sort-algo (lambda ()
+                                                         (org-sort-tasks/nshuffle
+                                                          (cl-loop for x from 1 to 16 collect x)))))
+        (f (org-sort-tasks/sort-counting-avg sort-algo (lambda ()
+                                                         (org-sort-tasks/nshuffle
+                                                          (cl-loop for x from 1 to 64 collect x)))))
+        (g (org-sort-tasks/sort-counting-avg sort-algo (lambda ()
+                                                         (org-sort-tasks/slightly-nshuffle 6
+                                                          (cl-loop for x from 1 to 16 collect x)))))
+        (h (org-sort-tasks/sort-counting-avg sort-algo (lambda ()
+                                                         (org-sort-tasks/slightly-nshuffle 6
+                                                          (cl-loop for x from 1 to 64 collect x)))))
+        (i (org-sort-tasks/sort-counting-avg sort-algo (lambda ()
+                                                         (org-sort-tasks/slightly-nshuffle 6
+                                                          (cl-loop for x from 1 to 512 collect x)))))
+        (j (org-sort-tasks/sort-counting-avg sort-algo (lambda ()
+                                                         (org-sort-tasks/slightly-nshuffle 12
+                                                          (cl-loop for x from 1 to 64 collect x)))))
+        )
+    (message (format "
+Short sorted list:............... %s
+Long sorted list:................ %s
+Short reversed list:............. %s
+Long reversed list:.............. %s
+Short shuffled list:............. %s
+Long shuffled list:.............. %s
+Short slightly shuffled list: (*) %s
+Long slightly shuffled list:..... %s
+Very long slightly shuffled list: %s
+L v. slightly shuffled list (*):. %s
+AVG.............................: %s
+" a b c d e f g h i j (/ (+ a b c d e f g h i j) 10.0)))))
+
+
+;(org-sort-tasks/test-sort-algo 'sort)
+;(org-sort-tasks/test-sort-algo 'org-sort-tasks/insert-sort)
+;(org-sort-tasks/test-sort-algo 'org-sort-tasks/adapted-merge-sort)
+
 (defun sort-tasks/timestamp-obj=? (ts1 ts2)
   "Compare two timestamp object and returns true if they are equal until day level."
   (and (= (org-element-property :year-start ts1)
@@ -79,7 +239,7 @@
 ;;
 
 (defun sort-tasks/sort-list (task-list)
-  (sort task-list 'sort-tasks/sort))
+  (apply org-sort-tasks-algo (list task-list 'sort-tasks/sort)))
 
 (defun sort-tasks/sort-children (final-buffer element)
   "This fn receives a root element and sort all its children.
@@ -218,3 +378,5 @@ The user will be prompted to reply a simple question like \"Should 'xxx task' BE
 
 (provide 'org-sort-tasks)
 (provide 'org-insert-sorted-todo-heading)
+
+
